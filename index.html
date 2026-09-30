@@ -488,9 +488,9 @@
           <p>규격, 지질, 골 종류, 후가공 사양을 입력하면 공급단가가 바로 계산됩니다.</p>
         </div>
         <div class="quote-frame">
-          <iframe src="https://syp26.github.io/quote/" title="신용판도라 자동 견적 계산기" loading="lazy"></iframe>
+          <iframe id="quoteInlineFrame" title="신용판도라 자동 견적 계산기" loading="lazy"></iframe>
         </div>
-        <p class="quote-note">계산기가 보이지 않으면 <a href="https://syp26.github.io/quote/" target="_blank" rel="noopener">새 창에서 열기</a></p>
+        <p class="quote-note">계산기가 보이지 않으면 <a href="https://syp26.github.io/quote/" id="quoteNewTab" target="_blank" rel="noopener">새 창에서 열기</a></p>
         <div class="channel quote-mobile">
           <div><small>규격·수량·후가공을 고르면 단가가 바로 계산돼요</small><strong>자동 견적 계산기</strong></div>
           <button type="button" class="btn btn-primary" data-open-quote>견적 계산기 열기</button>
@@ -535,6 +535,7 @@
               </select>
             </div>
             <div class="field"><label for="f-qty">예상 수량 <span class="opt">(선택)</span></label><input id="f-qty" name="qty" inputmode="numeric" placeholder="예: 1,000개"></div>
+            <input type="hidden" name="유입경로" id="f-source">
             <!-- 스팸봇 차단용 숨김 칸(사람은 보지 못함) -->
             <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute; left:-9999px;">
             <div class="field full"><label for="f-msg">문의 내용</label><textarea id="f-msg" name="message" placeholder="제품 크기, 원하는 느낌, 납기 등을 알려주세요." required></textarea></div>
@@ -755,6 +756,52 @@
       window.addEventListener('scroll', guard, { passive: true });
       setTimeout(() => window.removeEventListener('scroll', guard), 4000);
     })();
+
+
+    /* ---------- 유입 경로 ----------
+       링크 끝에 ?from=코드 를 붙이면 문의·견적 메일에 어디서 왔는지 표시됩니다.
+       코드를 추가하려면 아래 목록에 한 줄 더 넣으면 됩니다. */
+    const SOURCE_NAMES = {
+      blog: '판도라 블로그',
+      mainblog: '메인 블로그(신용종합패키지)',
+      main: '메인 홈페이지(카페24)',
+      kakao: '카카오톡 채널',
+      insta: '인스타그램',
+      youtube: '유튜브'
+    };
+    function detectSource() {
+      const q = new URLSearchParams(location.search);
+      const code = (q.get('from') || '').trim();
+      if (code) return SOURCE_NAMES[code] || code;
+      let host = '';
+      try { host = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) {}
+      if (!host) return '직접 방문';
+      if (host.includes('blog.naver')) return '네이버 블로그(링크 표시 없음)';
+      if (host.includes('search.naver') || host.includes('naver.com')) return '네이버 검색';
+      if (host.includes('google')) return '구글 검색';
+      if (host.includes('daum') || host.includes('kakao')) return '다음·카카오';
+      if (host.includes('instagram')) return '인스타그램';
+      if (host.includes('youtube')) return '유튜브';
+      return host;
+    }
+
+    // 방문자가 사이트 안에서 이동해도 처음 들어온 경로를 유지
+    let SOURCE = '';
+    try { SOURCE = sessionStorage.getItem('pandora_source') || ''; } catch (e) {}
+    if (!SOURCE) {
+      SOURCE = detectSource();
+      try { sessionStorage.setItem('pandora_source', SOURCE); } catch (e) {}
+    }
+    document.getElementById('f-source').value = SOURCE;
+
+    // 견적기에도 유입 경로를 넘겨서 견적 메일에 같이 표시
+    const QUOTE_URL = 'https://syp26.github.io/quote/?src=' + encodeURIComponent(SOURCE + ' → 판도라 사이트');
+    const inlineFrame = document.getElementById('quoteInlineFrame');
+    if (inlineFrame && getComputedStyle(inlineFrame.parentElement).display !== 'none') inlineFrame.src = QUOTE_URL;
+    const newTab = document.getElementById('quoteNewTab');
+    if (newTab) newTab.href = QUOTE_URL;
+    const dialogFrame = document.getElementById('quoteDialogFrame');
+    if (dialogFrame) dialogFrame.dataset.src = QUOTE_URL;
 
     /* ---------- Config wiring ---------- */
     document.querySelectorAll('[data-kakao]').forEach(el => {
