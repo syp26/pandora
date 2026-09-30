@@ -735,6 +735,27 @@
       }
     ];
 
+    /* ---------- 열자마자 저절로 스크롤되는 현상 방지 ----------
+       사용자가 화면을 만지기 전(처음 4초)에 스크롤이 움직이면 맨 위로 되돌립니다. */
+    (function () {
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      if (location.hash) return;
+      let userActed = false;
+      const mark = () => { userActed = true; };
+      ['touchstart', 'wheel', 'keydown', 'mousedown'].forEach(t =>
+        window.addEventListener(t, mark, { passive: true, capture: true }));
+      const guard = () => {
+        if (userActed || window.scrollY === 0) return;
+        const root = document.documentElement;
+        const prev = root.style.scrollBehavior;
+        root.style.scrollBehavior = 'auto';
+        window.scrollTo(0, 0);
+        root.style.scrollBehavior = prev;
+      };
+      window.addEventListener('scroll', guard, { passive: true });
+      setTimeout(() => window.removeEventListener('scroll', guard), 4000);
+    })();
+
     /* ---------- Config wiring ---------- */
     document.querySelectorAll('[data-kakao]').forEach(el => {
       if (CONFIG.KAKAO_URL) { el.href = CONFIG.KAKAO_URL; el.hidden = false; }
