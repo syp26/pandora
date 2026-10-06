@@ -347,6 +347,12 @@
     .sheet-close:hover { border-color: var(--text); }
     .sheet .box-art { aspect-ratio: 16 / 9; margin-bottom: 24px; }
     .sheet .box-art svg { width: 28%; }
+    .art-tabs { display: flex; gap: 8px; margin: 0 56px 12px 0; }
+    .art-tabs .chip { min-height: 36px; padding: 0 14px; font-size: 0.85rem; }
+    .box-3d { position: relative; aspect-ratio: 3 / 2; margin-bottom: 24px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--ink); overflow: hidden; cursor: grab; touch-action: pan-y; }
+    .box-3d.dragging { cursor: grabbing; }
+    .box-3d canvas { display: block; width: 100% !important; height: 100% !important; }
+    .sheet .box-3d-hint { position: absolute; left: 0; right: 0; bottom: 10px; margin: 0; text-align: center; font-size: 0.8rem; color: var(--muted); pointer-events: none; }
     .sheet .box-art:has(img) { aspect-ratio: 3 / 2; background: #E8E6E0; }
     .box-art:has(img) { background: #E8E6E0; }
     .sheet h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; margin: 0 52px 12px 0; line-height: 1.3; }
@@ -717,7 +723,12 @@
   <dialog id="detailDialog" aria-labelledby="detailTitle">
     <div class="sheet">
       <button type="button" class="sheet-close" data-close aria-label="닫기">&times;</button>
+      <div class="art-tabs" id="detailTabs" role="group" aria-label="보기 방식" hidden>
+        <button type="button" class="chip" data-art="photo" aria-pressed="true">실물 사진</button>
+        <button type="button" class="chip" data-art="3d" aria-pressed="false">3D로 보기</button>
+      </div>
       <div class="box-art" id="detailArt"></div>
+      <div class="box-3d" id="detail3d" hidden><p class="box-3d-hint" id="detail3dHint">드래그해서 돌리고, 눌러서 열어보세요</p></div>
       <h2 id="detailTitle"></h2>
       <p id="detailDesc"></p>
       <dl class="spec">
@@ -1271,6 +1282,281 @@
       vDlg.addEventListener('click', e => {
         if (e.target === vDlg || e.target.closest('[data-close]')) closeDialog(vDlg);
       });
+    })();
+
+    /* ---------- 라인업 팝업: 유형별 3D 보기 ----------
+       팝업의 '3D로 보기'를 누르면 그 유형의 상자를 돌려 보고, 눌러서 열어 볼 수 있습니다.
+       상자는 판(sheet)과 경첩(flap)으로 조립합니다. WebGL을 못 쓰는 기기에서는 탭 자체가 나타나지 않습니다. */
+    (function () {
+      const tabs = document.getElementById('detailTabs');
+      const art = document.getElementById('detailArt');
+      const host = document.getElementById('detail3d');
+      const hint = document.getElementById('detail3dHint');
+      if (!tabs || !art || !host) return;
+      const HALF = Math.PI / 2;
+      const clamp01 = x => Math.max(0, Math.min(1, x));
+      const seg = (t, a, b) => clamp01((t - a) / (b - a));
+      const ease = t => t * t * (3 - 2 * t);
+      const mix = (a, b, t) => a + (b - a) * t;
+      const NAVY = { out: 0x1F2742, in: 0xC8A27A }, KRAFT = { out: 0xB98F63, in: 0xD6BC96 }, WHITE = { out: 0xE6E9EF, in: 0xBFC4CE }, RED = { out: 0xB3141F, in: 0xC8A27A };
+
+      /* 조립 도구: sheet = 판 한 장(아래 변이 기준선, +z 쪽이 상자 안쪽 면), flap = 경첩 달린 판 */
+      function kit(pal) {
+        const off = { polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 };
+        const inM = new THREE.MeshStandardMaterial(Object.assign({ color: pal.in, roughness: 0.9, side: THREE.FrontSide }, off));
+        const outM = new THREE.MeshStandardMaterial(Object.assign({ color: pal.out, roughness: 0.6, metalness: 0.1, side: THREE.BackSide }, off));
+        const edgeM = new THREE.LineBasicMaterial({ color: 0xE4222E });
+        const k = { edgeM };
+        k.sheet = (w, h) => {
+          const g = new THREE.PlaneGeometry(w, h); g.translate(0, h / 2, 0);
+          const o = new THREE.Group();
+          o.add(new THREE.Mesh(g, inM), new THREE.Mesh(g, outM), new THREE.LineSegments(new THREE.EdgesGeometry(g), edgeM));
+          return o;
+        };
+        /* 반환값의 rotation.x: 0 = 수직, HALF = 안쪽으로 눕힘, 음수 = 바깥으로 젖힘 */
+        k.flap = (parent, x, y, z, yaw, w, h) => {
+          const base = new THREE.Group(); base.position.set(x, y, z); base.rotation.y = yaw;
+          const hinge = new THREE.Group(); hinge.add(k.sheet(w, h)); base.add(hinge); parent.add(base);
+          return hinge;
+        };
+        k.fold = (hinge, at, w, h) => {            // 판 끝(at)에 이어 붙은 날개
+          const f = new THREE.Group(); f.position.y = at; f.add(k.sheet(w, h)); hinge.add(f); return f;
+        };
+        k.floor = (parent, w, d, y, up) => {       // up = 안쪽 면이 위를 봄
+          const sh = k.sheet(w, d); sh.position.set(0, y, up ? d / 2 : -d / 2); sh.rotation.x = up ? -HALF : HALF; parent.add(sh); return sh;
+        };
+        k.walls = (parent, w, h, d, sides) => {    // sides: b f l r 중 세울 벽
+          const o = {}, on = c => !sides || sides.indexOf(c) >= 0;
+          if (on('b')) o.b = k.flap(parent, 0, 0, -d / 2, 0, w, h);
+          if (on('f')) o.f = k.flap(parent, 0, 0, d / 2, Math.PI, w, h);
+          if (on('l')) o.l = k.flap(parent, -w / 2, 0, 0, HALF, d, h);
+          if (on('r')) o.r = k.flap(parent, w / 2, 0, 0, -HALF, d, h);
+          return o;
+        };
+        k.tray = (parent, w, h, d, y) => {         // 위가 열린 상자
+          const g = new THREE.Group(); g.position.y = y || 0; k.floor(g, w, d, 0, true); k.walls(g, w, h, d); parent.add(g); return g;
+        };
+        k.solid = (parent, w, h, d, color, x, y, z) => {
+          const geo = new THREE.BoxGeometry(w, h, d);
+          const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.6, metalness: 0.1 }, off)));
+          m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeM)); m.position.set(x || 0, y || 0, z || 0); parent.add(m); return m;
+        };
+        return k;
+      }
+      /* 뒤쪽 벽에 달린 뚜껑 + 꽂이날개 */
+      function tuckLid(k, g, w, h, d, tuck) {
+        const lid = k.flap(g, 0, h + 0.004, -d / 2, 0, w, d - 0.012);
+        const tk = k.fold(lid, d - 0.012, w, tuck);
+        return (t, back) => { lid.rotation.x = mix(HALF, back, ease(seg(t, 0, 0.75))); tk.rotation.x = mix(HALF, 0.3, ease(seg(t, 0, 0.5))); return lid; };
+      }
+
+      const BUILD = {
+        B() {            // 단상자: 양옆 속날개 + 꽂이 뚜껑
+          const k = kit(NAVY), g = new THREE.Group(), w = 1.1, h = 1.8, d = 0.75;
+          k.tray(g, w, h, d);
+          const dl = k.flap(g, -w / 2, h - 0.02, 0, HALF, d, 0.4), dr = k.flap(g, w / 2, h - 0.02, 0, -HALF, d, 0.4);
+          const lid = tuckLid(k, g, w, h, d, 0.3);
+          return { g, set(t) { lid(t, -0.45); dl.rotation.x = dr.rotation.x = mix(HALF, -0.35, ease(seg(t, 0.35, 1))); } };
+        },
+        GC() {           // 골판지 일체형: 뒤에서 넘어오는 뚜껑
+          const k = kit(KRAFT), g = new THREE.Group(), w = 2.0, h = 0.55, d = 1.5;
+          k.tray(g, w, h, d);
+          const lid = tuckLid(k, g, w, h, d, 0.4);
+          return { g, set(t) { lid(t, -0.35); } };
+        },
+        D() {            // 납작한 상자
+          const k = kit(NAVY), g = new THREE.Group(), w = 2.3, h = 0.2, d = 1.5;
+          k.tray(g, w, h, d);
+          const lid = tuckLid(k, g, w, h, d, 0.15);
+          return { g, set(t) { lid(t, -0.4); } };
+        },
+        A() {            // 택배 상자: 날개 4장 + 테이프
+          const k = kit(KRAFT), g = new THREE.Group(), w = 1.7, h = 1.25, d = 1.3;
+          k.tray(g, w, h, d);
+          const ml = k.flap(g, -w / 2, h - 0.02, 0, HALF, d, d / 2), mr = k.flap(g, w / 2, h - 0.02, 0, -HALF, d, d / 2);
+          const fb = k.flap(g, 0, h, -d / 2, 0, w, d / 2 - 0.004), ff = k.flap(g, 0, h, d / 2, Math.PI, w, d / 2 - 0.004);
+          const tapeM = new THREE.MeshStandardMaterial({ color: 0xEFE3CB, roughness: 0.4, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
+          const top = new THREE.Mesh(new THREE.PlaneGeometry(w, 0.2), tapeM); top.rotation.x = -HALF; top.position.y = h + 0.012; g.add(top);
+          [-1, 1].forEach(sgn => { const sd = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.3), tapeM); sd.rotation.y = HALF; sd.position.set(sgn * (w / 2 + 0.006), h - 0.15, 0); g.add(sd); });
+          return { g, set(t) {
+            tapeM.opacity = 0.9 * (1 - seg(t, 0, 0.2)); tapeM.visible = tapeM.opacity > 0.01;
+            fb.rotation.x = ff.rotation.x = mix(HALF, -0.7, ease(seg(t, 0.12, 0.75)));
+            ml.rotation.x = mr.rotation.x = mix(HALF, -0.55, ease(seg(t, 0.4, 1)));
+          } };
+        },
+        M() {            // 끈 손잡이: 지붕처럼 모이는 윗날개 + 끈
+          const k = kit(NAVY), g = new THREE.Group(), w = 1.9, h = 1.15, d = 0.8, rise = 0.42;
+          k.tray(g, w, h, d);
+          const a = Math.atan(rise / (d / 2)), L = Math.hypot(rise, d / 2) - 0.004, closed = HALF - a;
+          const fb = k.flap(g, 0, h, -d / 2, 0, w, L), ff = k.flap(g, 0, h, d / 2, Math.PI, w, L);
+          const ropeM = new THREE.MeshStandardMaterial({ color: 0xE2D3B5, roughness: 0.8 });
+          [fb, ff].forEach(f => { const r = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.024, 8, 28, Math.PI), ropeM); r.position.y = L - 0.03; f.add(r); });
+          return { g, set(t) { fb.rotation.x = ff.rotation.x = mix(closed, -0.3, ease(t)); } };
+        },
+        R() {            // 쇼핑백형: 윗날개가 모여 손잡이가 됨
+          const k = kit(WHITE), g = new THREE.Group(), w = 1.9, h = 0.8, d = 1.2, rise = 0.28;
+          k.tray(g, w, h, d);
+          const a = Math.atan(rise / (d / 2)), L = Math.hypot(rise, d / 2) - 0.008, closed = HALF - a;
+          const flaps = [k.flap(g, 0, h, -d / 2, 0, w, L), k.flap(g, 0, h, d / 2, Math.PI, w, L)];
+          flaps.forEach(f => {
+            const plate = k.fold(f, L, 0.95, 0.42); plate.rotation.x = -closed;
+            const slot = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(0.42, 0.11)), k.edgeM); slot.position.set(0, 0.25, 0); plate.add(slot);
+          });
+          return { g, set(t) { flaps[0].rotation.x = flaps[1].rotation.x = mix(closed, -0.25, ease(t)); } };
+        },
+        H() {            // 손잡이형: 뚜껑 위에 손잡이
+          const k = kit(NAVY), g = new THREE.Group(), w = 1.4, h = 1.45, d = 0.9;
+          k.tray(g, w, h, d);
+          const lid = tuckLid(k, g, w, h, d, 0.28);
+          const grip = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.045, 10, 28, Math.PI), new THREE.MeshStandardMaterial({ color: 0x9AA3B2, roughness: 0.45 }));
+          grip.rotation.x = -HALF; grip.position.set(0, (d - 0.012) / 2, -0.004); lid(0, 0).add(grip);
+          return { g, set(t) { lid(t, -0.4); } };
+        },
+        Y() {            // 뚜껑과 몸통이 분리
+          const k = kit(NAVY), g = new THREE.Group(), w = 1.9, h = 0.7, d = 1.4;
+          k.tray(g, w, h, d);
+          const lid = k.tray(g, w + 0.05, 0.3, d + 0.05, 0); lid.rotation.x = Math.PI;
+          return { g, set(t) { const e = ease(t); lid.position.y = h + 0.015 + 1.0 * e; lid.rotation.z = 0.18 * e; } };
+        },
+        SB() {           // 싸바리: 속 상자(목)가 올라온 3단 구조
+          const k = kit(NAVY), kr = kit(RED), g = new THREE.Group(), w = 1.8, h = 0.5, d = 1.3;
+          k.tray(g, w, h, d);
+          kr.tray(g, w - 0.1, 0.9, d - 0.1, 0.012);
+          const lid = k.tray(g, w, 0.5, d, 0); lid.rotation.x = Math.PI;
+          return { g, set(t) { lid.position.y = 1.12 + 1.15 * ease(t); } };
+        },
+        S() {            // 슬리브: 겉 띠에서 속 상자가 빠져나옴
+          const k = kit(NAVY), kk = kit(KRAFT), g = new THREE.Group(), w = 1.9, h = 0.55, d = 1.2;
+          k.floor(g, w, d, 0, true); k.floor(g, w, d, h, false); k.walls(g, w, h, d, 'bf');
+          const inner = kk.tray(g, w - 0.05, h - 0.08, d - 0.07, 0.02);
+          return { g, set(t) { inner.position.x = 1.3 * ease(t); } };
+        },
+        PET() {          // 투명창: 앞면 창으로 제품이 보임
+          const k = kit(NAVY), g = new THREE.Group(), w = 1.1, h = 1.7, d = 0.75, lo = 0.36, hi = 0.3, sd = 0.17;
+          k.floor(g, w, d, 0, true); k.walls(g, w, h, d, 'blr');
+          k.flap(g, 0, 0, d / 2, Math.PI, w, lo); k.flap(g, 0, h - hi, d / 2, Math.PI, w, hi);
+          k.flap(g, -(w / 2 - sd / 2), lo, d / 2, Math.PI, sd, h - lo - hi); k.flap(g, w / 2 - sd / 2, lo, d / 2, Math.PI, sd, h - lo - hi);
+          const pane = new THREE.Mesh(new THREE.PlaneGeometry(w - 2 * sd, h - lo - hi), new THREE.MeshStandardMaterial({ color: 0xCFE3FF, roughness: 0.1, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }));
+          pane.position.set(0, lo + (h - lo - hi) / 2, d / 2 - 0.003); g.add(pane);
+          k.solid(g, 0.5, 0.95, 0.32, 0xC8A27A, 0, 0.5, 0);
+          const lid = tuckLid(k, g, w, h, d, 0.28);
+          return { g, set(t) { lid(t, -0.45); } };
+        },
+        PAD() {          // 내부완충: 제품을 잡아 주는 속 받침
+          const kk = kit(KRAFT), kn = kit(NAVY), g = new THREE.Group(), w = 2.0, h = 0.5, d = 1.4;
+          kk.tray(g, w, h, d);
+          const pad = new THREE.Group(); g.add(pad);
+          kk.floor(pad, w - 0.08, d - 0.08, 0, true);
+          [-0.48, 0.48].forEach(x => {
+            const cell = new THREE.Group(); cell.position.x = x; pad.add(cell);
+            kk.walls(cell, 0.66, 0.2, 0.86);
+            kn.solid(cell, 0.56, 0.3, 0.76, 0x1F2742, 0, 0.155, 0);
+          });
+          return { g, set(t) { pad.position.y = 0.16 + 0.95 * ease(t); } };
+        }
+      };
+
+      /* ---- 뷰어 ---- */
+      let key = null, R = null, raf = 0, model = null, open = false, openT = 0;
+      let dragging = false, moved = 0, lastX = 0, lastY = 0, ptype = 'mouse', tX = 0.38, tY = -0.65;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const supported = () => typeof THREE !== 'undefined' && !!window.WebGLRenderingContext && R !== false;
+
+      function ensure() {
+        if (R || R === false) return R;
+        try {
+          const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+          host.insertBefore(renderer.domElement, host.firstChild);
+          const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(36, 1.5, 0.1, 100);
+          camera.position.set(0, 1.5, 8.6); camera.lookAt(0, -0.32, 0);
+          scene.add(new THREE.AmbientLight(0xffffff, 0.48));
+          const keyL = new THREE.DirectionalLight(0xffffff, 0.55); keyL.position.set(3, 6, 5); scene.add(keyL);
+          const rim = new THREE.PointLight(0xE4222E, 0.5, 16); rim.position.set(-4, 2, -3); scene.add(rim);
+          const spin = new THREE.Group(); scene.add(spin);
+          R = { renderer, scene, camera, spin };
+          new ResizeObserver(resize).observe(host);
+        } catch (err) { R = false; tabs.hidden = true; }
+        return R;
+      }
+      function resize() {
+        if (!R) return;
+        const w = host.clientWidth, h = host.clientHeight;
+        if (!w || !h) return;
+        R.renderer.setSize(w, h, false); R.camera.aspect = w / h; R.camera.updateProjectionMatrix();
+      }
+      function load(k) {
+        if (model) {
+          R.spin.remove(model.wrap);
+          model.wrap.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+        }
+        const m = BUILD[k]();
+        /* 닫힌 모습과 열린 모습을 모두 담도록 크기와 중심을 맞춤 */
+        const bb = new THREE.Box3();
+        m.set(0); m.g.updateMatrixWorld(true); bb.setFromObject(m.g);
+        m.set(1); m.g.updateMatrixWorld(true); bb.union(new THREE.Box3().setFromObject(m.g));
+        m.set(0);
+        const size = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
+        const sc = 4.3 / Math.max(Math.hypot(size.x, size.z) * 0.86, size.y * 1.2);
+        m.g.scale.setScalar(sc); m.g.position.set(-c.x * sc, -c.y * sc, -c.z * sc);
+        m.wrap = new THREE.Group(); m.wrap.add(m.g); R.spin.add(m.wrap);
+        model = m; model.key = k; open = false; openT = 0; tX = 0.38; tY = -0.65;
+        R.spin.rotation.set(tX, tY, 0);
+        if (hint) hint.textContent = '드래그해서 돌리고, 눌러서 열어보세요';
+      }
+      function tick() {
+        raf = 0;
+        if (mode !== '3d' || !detail.open || !R || !model) return;
+        if (!dragging && !reduce) tY += 0.0035;
+        R.spin.rotation.y += (tY - R.spin.rotation.y) * 0.12;
+        R.spin.rotation.x += (tX - R.spin.rotation.x) * 0.12;
+        openT += ((open ? 1 : 0) - openT) * (reduce ? 1 : 0.07);
+        model.set(clamp01(openT));
+        R.renderer.render(R.scene, R.camera);
+        raf = requestAnimationFrame(tick);
+      }
+      function start() {
+        if (!ensure() || !key) return;
+        if (!model || model.key !== key) load(key);
+        resize();
+        if (!raf) raf = requestAnimationFrame(tick);
+      }
+
+      host.addEventListener('pointerdown', e => {
+        dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY; ptype = e.pointerType;
+        host.setPointerCapture(e.pointerId); host.classList.add('dragging');
+      });
+      host.addEventListener('pointermove', e => {
+        if (!dragging) return;
+        const dx = e.clientX - lastX, dy = e.clientY - lastY;
+        moved += Math.abs(dx) + Math.abs(dy);
+        tY += dx * 0.012;
+        if (ptype === 'mouse') tX = Math.max(-0.5, Math.min(1.2, tX + dy * 0.008));
+        lastX = e.clientX; lastY = e.clientY;
+      });
+      host.addEventListener('pointerup', () => {
+        if (!dragging) return;
+        dragging = false; host.classList.remove('dragging');
+        if (moved < 6) { open = !open; if (hint) hint.textContent = open ? '다시 누르면 닫혀요' : '드래그해서 돌리고, 눌러서 열어보세요'; }
+      });
+      host.addEventListener('pointercancel', () => { dragging = false; host.classList.remove('dragging'); });
+
+      let mode = 'photo';
+      function setMode(m) {
+        mode = m;
+        tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.art === m)));
+        art.hidden = m === '3d'; host.hidden = m !== '3d';
+        if (m === '3d') start();
+      }
+      tabs.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setMode(b.dataset.art); });
+      grid.addEventListener('click', e => {
+        const item = e.target.closest('.box-item');
+        if (!item || !item.dataset.key) return;
+        key = item.dataset.key;
+        tabs.hidden = !(supported() && BUILD[key]);
+        setMode('photo');
+      });
+      detail.addEventListener('close', () => setMode('photo'));
     })();
 
     /* ---------- Contact form ---------- */
