@@ -197,7 +197,9 @@
     .text-link { color: var(--kraft); font-weight: 600; font-size: 0.92rem; text-decoration: none; border-bottom: 1px solid rgba(200,162,122,.4); padding-bottom: 2px; }
     .text-link:hover { border-color: var(--kraft); }
 
-    .about-lead { display: grid; gap: 32px; align-content: start; }
+    .videos { margin-top: clamp(44px, 6vw, 76px); }
+    .videos h3 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 18px; }
+    .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .video-card { display: block; width: 100%; padding: 0; text-align: left; cursor: pointer; border: 1px solid var(--line-strong); border-radius: var(--radius-lg); overflow: hidden; background: #05070B; transition: border-color .2s; }
     .video-card:hover { border-color: var(--text); }
     .video-card img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
@@ -381,6 +383,13 @@
       .section-head, .about, .contact { grid-template-columns: 1fr; }
       .section-head { gap: 16px; margin-bottom: 36px; }
       .form { grid-template-columns: 1fr; }
+      .video-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .video-grid .video-card:first-child { grid-column: 1 / -1; }
+      .video-grid .video-card:not(:first-child) .video-bar { padding: 10px 12px; gap: 10px; }
+      .video-grid .video-card:not(:first-child) .video-play { width: 34px; height: 34px; }
+      .video-grid .video-card:not(:first-child) .video-play svg { width: 16px; height: 16px; }
+      .video-grid .video-card:not(:first-child) strong { font-size: 0.86rem; }
+      .video-grid .video-card:not(:first-child) small { font-size: 0.76rem; }
       .is-3d .process-pin {
         grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; align-items: stretch;
         top: calc(var(--header-h) + env(safe-area-inset-top, 0px) + 10px);
@@ -482,17 +491,7 @@
           <p>포장재가 아니라 브랜드가 고객에게 처음 닿는 순간을 설계합니다.</p>
         </div>
         <div class="about">
-          <div class="about-lead">
-            <blockquote>패키지는 단순한 포장재가 아닙니다. 제품의 가치를 완성하고 브랜드와 고객을 잇는 가장 강력한 접점입니다.</blockquote>
-            <!-- 홍보영상: 파일은 assets/video/ 폴더. 누르기 전에는 영상을 불러오지 않습니다 -->
-            <button type="button" class="video-card" id="videoOpen" aria-haspopup="dialog">
-              <img src="assets/video/pandora-line-to-box-poster.webp" alt="선이 모여 상자가 되는 신용판도라 홍보영상의 한 장면" width="1280" height="720" loading="lazy">
-              <span class="video-bar">
-                <span class="video-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
-                <span><strong>홍보영상 보기</strong><small>15초, 소리가 납니다</small></span>
-              </span>
-            </button>
-          </div>
+          <blockquote>패키지는 단순한 포장재가 아닙니다. 제품의 가치를 완성하고 브랜드와 고객을 잇는 가장 강력한 접점입니다.</blockquote>
           <div class="about-body">
             <p>신용판도라는 서울 을지로 방산시장에서 오랜 시간 쌓아 온 수공업 노하우와 검증된 전문 공장 네트워크를 결합해, B2B 기업 고객에게 구조 기획부터 납품까지 원스톱 패키징 솔루션을 제공합니다.</p>
             <p>소량 샘플부터 대량 양산까지, 구조 설계와 재질 선택, 인쇄와 후가공을 한 곳에서 책임집니다.</p>
@@ -500,6 +499,34 @@
               <div><small>신용판도라 대표</small><strong>신승호</strong></div>
               <a href="#" class="text-link" data-main-site hidden>신용종합패키지 바로가기</a>
             </div>
+          </div>
+        </div>
+        <!-- 홍보영상: 파일은 assets/video/ 폴더. 누르기 전에는 영상을 불러오지 않습니다.
+             영상을 추가하려면 아래 button 한 덩어리를 복사해 파일 이름과 제목만 바꾸면 됩니다 -->
+        <div class="videos">
+          <h3>영상으로 보는 신용판도라</h3>
+          <div class="video-grid">
+            <button type="button" class="video-card" data-video="assets/video/pandora-main-60s.mp4" data-poster="assets/video/pandora-main-60s-poster.webp" data-title="신용판도라 소개" aria-haspopup="dialog">
+              <img src="assets/video/pandora-main-60s-poster.webp" alt="색색의 상자 수백 개가 펼쳐진 신용판도라 소개 영상의 한 장면" width="1280" height="720" loading="lazy">
+              <span class="video-bar">
+                <span class="video-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
+                <span><strong>신용판도라 소개</strong><small>1분, 소리 있음</small></span>
+              </span>
+            </button>
+            <button type="button" class="video-card" data-video="assets/video/pandora-line-to-box.mp4" data-poster="assets/video/pandora-line-to-box-poster.webp" data-title="선에서 상자까지" aria-haspopup="dialog">
+              <img src="assets/video/pandora-line-to-box-poster.webp" alt="선이 모여 상자가 되는 영상의 한 장면" width="1280" height="720" loading="lazy">
+              <span class="video-bar">
+                <span class="video-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
+                <span><strong>선에서 상자까지</strong><small>15초, 소리 있음</small></span>
+              </span>
+            </button>
+            <button type="button" class="video-card" data-video="assets/video/pandora-pencil-sketch.mp4" data-poster="assets/video/pandora-pencil-sketch-poster.webp" data-title="그리는 대로 상자가 됩니다" aria-haspopup="dialog">
+              <img src="assets/video/pandora-pencil-sketch-poster.webp" alt="연필 스케치가 여섯 가지 상자로 바뀌는 영상의 한 장면" width="1280" height="720" loading="lazy">
+              <span class="video-bar">
+                <span class="video-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
+                <span><strong>그리는 대로 상자가 됩니다</strong><small>20초, 소리 있음</small></span>
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -712,7 +739,7 @@
   <dialog id="videoDialog" aria-label="신용판도라 홍보영상">
     <div class="sheet sheet-video">
       <button type="button" class="sheet-close" data-close aria-label="닫기">&times;</button>
-      <video id="promoVideo" src="assets/video/pandora-line-to-box.mp4" poster="assets/video/pandora-line-to-box-poster.webp" controls playsinline preload="none"></video>
+      <video id="promoVideo" controls playsinline preload="none"></video>
     </div>
   </dialog>
 
@@ -1146,17 +1173,23 @@
       renderCases();
     })();
 
-    /* ---------- 홍보영상 팝업: 열면 처음부터 재생, 닫으면 멈춤 ---------- */
+    /* ---------- 홍보영상 팝업: 카드를 누르면 그 영상을 처음부터 재생, 닫으면 멈춤 ---------- */
     (function () {
       const vDlg = document.getElementById('videoDialog');
       const video = document.getElementById('promoVideo');
-      const opener = document.getElementById('videoOpen');
-      if (!vDlg || !video || !opener) return;
-      opener.addEventListener('click', () => {
-        openDialog(vDlg);
-        try { video.currentTime = 0; } catch (err) {}
-        const p = video.play();
-        if (p && p.catch) p.catch(() => {});      // 자동 재생이 막히면 재생 버튼으로 직접 재생
+      if (!vDlg || !video) return;
+      document.querySelectorAll('.video-card').forEach(card => {
+        card.addEventListener('click', () => {
+          if (video.getAttribute('src') !== card.dataset.video) {
+            video.poster = card.dataset.poster;
+            video.src = card.dataset.video;
+          }
+          vDlg.setAttribute('aria-label', card.dataset.title + ' 영상');
+          openDialog(vDlg);
+          try { video.currentTime = 0; } catch (err) {}
+          const p = video.play();
+          if (p && p.catch) p.catch(() => {});      // 자동 재생이 막히면 재생 버튼으로 직접 재생
+        });
       });
       vDlg.addEventListener('close', () => {
         video.pause();
