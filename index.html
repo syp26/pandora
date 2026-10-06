@@ -258,6 +258,7 @@
     .case-cap { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 14px 16px 16px; }
     .case-name { font-weight: 600; font-size: 0.95rem; letter-spacing: -0.01em; }
     .cases-more { margin-top: 24px; }
+    .chip-sep { width: 1px; align-self: stretch; margin: 4px 6px; background: var(--line-strong); }
     .sheet.sheet-case { width: min(760px, calc(100vw - 32px)); }
     .case-photo { border-radius: var(--radius-sm); overflow: hidden; background: #E8E6E0; margin-bottom: 12px; }
     .case-photo img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; }
@@ -579,14 +580,17 @@
           <h2>제작 사례</h2>
           <p>신용판도라가 직접 만든 박스입니다. 비슷한 박스를 찾으셨다면 사진을 눌러 바로 문의하세요.</p>
         </div>
-        <div class="filters" role="group" aria-label="제작 사례 업종 필터" id="caseFilters">
+        <div class="filters" role="group" aria-label="제작 사례 필터" id="caseFilters">
           <button type="button" class="chip" data-case-filter="all" aria-pressed="true">전체</button>
           <button type="button" class="chip" data-case-filter="food" aria-pressed="false">식품</button>
           <button type="button" class="chip" data-case-filter="beauty" aria-pressed="false">화장품·향수</button>
           <button type="button" class="chip" data-case-filter="fashion" aria-pressed="false">패션·잡화</button>
           <button type="button" class="chip" data-case-filter="craft" aria-pressed="false">공방·도자기·긴 박스</button>
+          <span class="chip-sep" aria-hidden="true"></span>
+          <button type="button" class="chip" data-case-filter="color" aria-pressed="false">칼라박스</button>
           <button type="button" class="chip" data-case-filter="corr" aria-pressed="false">골판지</button>
           <button type="button" class="chip" data-case-filter="ssabari" aria-pressed="false">싸바리</button>
+          <button type="button" class="chip" data-case-filter="petc" aria-pressed="false">PET·맞춤 구조</button>
         </div>
         <div class="cases" id="caseGrid"></div>
         <button type="button" class="btn btn-ghost cases-more" id="caseMore" hidden></button>
@@ -1069,49 +1073,51 @@
 
     /* ---------- Cases (제작 사례) ----------
        사례를 추가하려면 assets/images/cases/ 에 사진을 올리고 아래 목록에 한 줄을 더하면 됩니다.
-       cat: food(식품) beauty(화장품·향수) fashion(패션·잡화) craft(공방·도자기·긴 박스) corr(골판지) ssabari(싸바리)
+       cat: 업종 food(식품) beauty(화장품·향수) fashion(패션·잡화) craft(공방·도자기·긴 박스)
+            종류 color(칼라박스) corr(골판지) ssabari(싸바리) petc(PET·맞춤 구조)
        한 제품이 두 곳에 속하면 'beauty ssabari'처럼 띄어 씁니다. */
     const CASE_DIR = 'assets/images/cases/';
     const CASE_FIRST = 12;   // 처음에 보여줄 개수
+    const CASE_STEP = 24;    // '더 보기'를 누를 때마다 추가로 보여줄 개수
     const CASES = [
       { code: 'SY-14', name: '스카프 박스', cat: 'fashion', photos: ['sy-14-1.webp', 'sy-14-2.webp'] },
-      { code: 'SY-07', name: '한과 박스', cat: 'food', photos: ['sy-07-1.webp', 'sy-07-2.webp'] },
+      { code: 'SY-07', name: '한과 박스', cat: 'food corr', photos: ['sy-07-1.webp', 'sy-07-2.webp'] },
       { code: 'SY-19', name: '도자기 박스', cat: 'craft ssabari', photos: ['sy-19-1.webp', 'sy-19-2.webp'] },
       { code: 'SY-13', name: '스카프 박스', cat: 'fashion', photos: ['sy-13-1.webp', 'sy-13-2.webp'] },
-      { code: 'SY-01', name: '치킨 박스', cat: 'food', photos: ['sy-01-1.webp', 'sy-01-2.webp'] },
+      { code: 'SY-01', name: '치킨 박스', cat: 'food color', photos: ['sy-01-1.webp', 'sy-01-2.webp'] },
       { code: 'SY-37', name: '골판지 박스', cat: 'corr', photos: ['sy-37-1.webp', 'sy-37-2.webp'] },
-      { code: 'SY-20', name: '양말 박스', cat: 'fashion', photos: ['sy-20-1.webp', 'sy-20-2.webp'] },
-      { code: 'SY-29', name: '잼 박스', cat: 'food', photos: ['sy-29-1.webp', 'sy-29-2.webp'] },
+      { code: 'SY-20', name: '양말 박스', cat: 'fashion color', photos: ['sy-20-1.webp', 'sy-20-2.webp'] },
+      { code: 'SY-29', name: '잼 박스', cat: 'food corr', photos: ['sy-29-1.webp', 'sy-29-2.webp'] },
       { code: 'SY-31', name: '골판지 박스', cat: 'corr', photos: ['sy-31-1.webp', 'sy-31-2.webp'] },
-      { code: 'SY-06', name: '공방 박스', cat: 'craft', photos: ['sy-06-1.webp', 'sy-06-2.webp'] },
-      { code: 'SY-23', name: '화장품 박스', cat: 'beauty', photos: ['sy-23-1.webp', 'sy-23-2.webp'] },
-      { code: 'SY-28', name: '잼 박스', cat: 'food', photos: ['sy-28-1.webp', 'sy-28-2.webp'] },
+      { code: 'SY-06', name: '공방 박스', cat: 'craft petc', photos: ['sy-06-1.webp', 'sy-06-2.webp'] },
+      { code: 'SY-23', name: '화장품 박스', cat: 'beauty corr', photos: ['sy-23-1.webp', 'sy-23-2.webp'] },
+      { code: 'SY-28', name: '잼 박스', cat: 'food corr', photos: ['sy-28-1.webp', 'sy-28-2.webp'] },
       { code: 'SY-24', name: '화장품 박스', cat: 'beauty ssabari', photos: ['sy-24-1.webp', 'sy-24-2.webp'] },
       { code: 'SY-32', name: '골판지 박스', cat: 'corr', photos: ['sy-32-1.webp', 'sy-32-2.webp'] },
-      { code: 'SY-03', name: '치킨 박스', cat: 'food', photos: ['sy-03-1.webp', 'sy-03-2.webp'] },
+      { code: 'SY-03', name: '치킨 박스', cat: 'food corr', photos: ['sy-03-1.webp', 'sy-03-2.webp'] },
       { code: 'SY-15', name: '의류(요가복) 박스', cat: 'fashion ssabari', photos: ['sy-15-1.webp', 'sy-15-2.webp'] },
       { code: 'SY-17', name: '향수 박스', cat: 'beauty ssabari', photos: ['sy-17-1.webp'] },
-      { code: 'SY-27', name: '잼 박스', cat: 'food', photos: ['sy-27-1.webp', 'sy-27-2.webp'] },
+      { code: 'SY-27', name: '잼 박스', cat: 'food corr', photos: ['sy-27-1.webp', 'sy-27-2.webp'] },
       { code: 'SY-35', name: '골판지 박스', cat: 'corr', photos: ['sy-35-1.webp', 'sy-35-2.webp'] },
-      { code: '', name: '네일 박스', cat: 'beauty', photos: ['nail-1.webp', 'nail-2.webp'] },
+      { code: '', name: '네일 박스', cat: 'beauty color', photos: ['nail-1.webp', 'nail-2.webp'] },
       { code: 'SY-26', name: '면세품 박스', cat: 'fashion ssabari', photos: ['sy-26-1.webp', 'sy-26-2.webp'] },
       { code: 'SY-02', name: '치킨 박스', cat: 'food', photos: ['sy-02-1.webp'] },
-      { code: 'SY-18', name: '도자기 박스', cat: 'craft', photos: ['sy-18-1.webp', 'sy-18-2.webp'] },
-      { code: 'SY-25', name: '마스크 박스', cat: 'fashion', photos: ['sy-25-1.webp'] },
+      { code: 'SY-18', name: '도자기 박스', cat: 'craft corr', photos: ['sy-18-1.webp', 'sy-18-2.webp'] },
+      { code: 'SY-25', name: '마스크 박스', cat: 'fashion color', photos: ['sy-25-1.webp'] },
       { code: 'SY-36', name: '골판지 박스', cat: 'corr', photos: ['sy-36-1.webp', 'sy-36-2.webp'] },
       { code: 'SY-12', name: '긴 박스', cat: 'craft ssabari', photos: ['sy-12-1.webp', 'sy-12-2.webp'] },
-      { code: 'SY-05', name: '치킨 박스', cat: 'food', photos: ['sy-05-1.webp'] },
-      { code: 'SY-22', name: '화장품 박스', cat: 'beauty', photos: ['sy-22-1.webp'] },
+      { code: 'SY-05', name: '치킨 박스', cat: 'food petc', photos: ['sy-05-1.webp'] },
+      { code: 'SY-22', name: '화장품 박스', cat: 'beauty color', photos: ['sy-22-1.webp'] },
       { code: 'SY-34', name: '골판지 박스', cat: 'corr', photos: ['sy-34-1.webp', 'sy-34-2.webp'] },
-      { code: 'SY-21', name: '양말 박스', cat: 'fashion', photos: ['sy-21-1.webp', 'sy-21-2.webp'] },
+      { code: 'SY-21', name: '양말 박스', cat: 'fashion corr', photos: ['sy-21-1.webp', 'sy-21-2.webp'] },
       { code: 'SY-10', name: '긴 박스', cat: 'craft ssabari', photos: ['sy-10-1.webp', 'sy-10-2.webp'] },
-      { code: 'SY-04', name: '치킨 박스', cat: 'food', photos: ['sy-04-1.webp'] },
+      { code: 'SY-04', name: '치킨 박스', cat: 'food corr', photos: ['sy-04-1.webp'] },
       { code: 'SY-30', name: '골판지 박스', cat: 'corr', photos: ['sy-30-1.webp', 'sy-30-2.webp'] },
-      { code: 'SY-08', name: '깔창 박스', cat: 'fashion', photos: ['sy-08-1.webp'] },
-      { code: 'SY-09', name: '긴 박스', cat: 'craft', photos: ['sy-09-1.webp', 'sy-09-2.webp'] },
-      { code: '', name: '악세서리 박스', cat: 'fashion', photos: ['acc-1.webp'] },
+      { code: 'SY-08', name: '깔창 박스', cat: 'fashion color', photos: ['sy-08-1.webp'] },
+      { code: 'SY-09', name: '긴 박스', cat: 'craft corr', photos: ['sy-09-1.webp', 'sy-09-2.webp'] },
+      { code: '', name: '악세서리 박스', cat: 'fashion petc', photos: ['acc-1.webp'] },
       { code: 'SY-38', name: '골판지 박스', cat: 'corr', photos: ['sy-38-1.webp', 'sy-38-2.webp'] },
-      { code: 'SY-11', name: '긴 박스', cat: 'craft', photos: ['sy-11-1.webp', 'sy-11-2.webp'] },
+      { code: 'SY-11', name: '긴 박스', cat: 'craft corr', photos: ['sy-11-1.webp', 'sy-11-2.webp'] },
       { code: 'SY-33', name: '골판지 박스', cat: 'corr', photos: ['sy-33-1.webp', 'sy-33-2.webp'] },
       { code: '2S-401', name: '2단 싸바리 박스', cat: 'ssabari', photos: ['2s-401-1.webp', '2s-401-2.webp'] },
       { code: '2S402', name: '2단 싸바리 박스', cat: 'ssabari', photos: ['2s402-1.webp', '2s402-2.webp'] },
@@ -1123,7 +1129,43 @@
       { code: '4S1204', name: '표지 싸바리 박스', cat: 'ssabari', photos: ['4s1204-1.webp', '4s1204-2.webp'] },
       { code: '4S1205', name: '표지 싸바리 박스', cat: 'ssabari', photos: ['4s1205-1.webp', '4s1205-2.webp'] },
       { code: '4S1206', name: '표지 싸바리 박스', cat: 'ssabari', photos: ['4s1206-1.webp', '4s1206-2.webp'] },
-      { code: '', name: '표지 싸바리 박스', cat: 'ssabari', photos: ['4s-ls-1.webp'] }
+      { code: '', name: '표지 싸바리 박스', cat: 'ssabari', photos: ['4s-ls-1.webp'] },
+      { code: 'PB201', name: 'PET 투명창 박스', cat: 'petc', photos: ['pb201-1.webp', 'pb201-2.webp'] },
+      { code: 'PY401', name: 'PET 투명 뚜껑 박스', cat: 'petc', photos: ['py401-1.webp', 'py401-2.webp'] },
+      { code: 'EB201', name: 'B형 단상자', cat: 'corr', photos: ['eb201-1.webp', 'eb201-2.webp'] },
+      { code: 'EB202', name: 'B형 단상자', cat: 'corr', photos: ['eb202-1.webp', 'eb202-2.webp'] },
+      { code: 'EB203', name: 'B형 단상자', cat: 'corr', photos: ['eb203-1.webp', 'eb203-2.webp'] },
+      { code: 'EB204', name: 'B형 단상자', cat: 'corr', photos: ['eb204-1.webp', 'eb204-2.webp'] },
+      { code: 'EH901', name: 'H형 손잡이 박스', cat: 'corr', photos: ['eh901-1.webp', 'eh901-2.webp'] },
+      { code: 'EM502', name: 'M형 끈 손잡이 박스', cat: 'corr', photos: ['em502-1.webp', 'em502-2.webp'] },
+      { code: 'EM503', name: 'M형 끈 손잡이 박스', cat: 'corr', photos: ['em503-1.webp', 'em503-2.webp'] },
+      { code: 'ES1001', name: 'S형 슬리브 박스', cat: 'corr', photos: ['es1001-1.webp', 'es1001-2.webp'] },
+      { code: 'ES1003', name: 'S형 슬리브 박스', cat: 'corr', photos: ['es1003-1.webp', 'es1003-2.webp'] },
+      { code: 'ES1004', name: 'S형 슬리브 박스', cat: 'corr', photos: ['es1004-1.webp'] },
+      { code: 'HB201', name: 'B형 단상자', cat: 'corr food', photos: ['hb201-1.webp', 'hb201-2.webp'] },
+      { code: 'HC701', name: 'C형 박스', cat: 'corr', photos: ['hc701-1.webp', 'hc701-2.webp'] },
+      { code: 'HM102', name: '합지 박스', cat: 'corr', photos: ['hm102-1.webp'] },
+      { code: 'HM501', name: 'M형 끈 손잡이 박스', cat: 'corr food', photos: ['hm501-1.webp', 'hm501-2.webp'] },
+      { code: 'HM503', name: 'M형 끈 손잡이 박스', cat: 'corr', photos: ['hm503-1.webp', 'hm503-2.webp'] },
+      { code: 'MB201', name: 'B형 단상자', cat: 'color food', photos: ['mb201-1.webp'] },
+      { code: 'MB202', name: 'B형 단상자', cat: 'color food', photos: ['mb202-1.webp', 'mb202-2.webp'] },
+      { code: 'MB203', name: 'B형 단상자', cat: 'color food', photos: ['mb203-1.webp'] },
+      { code: 'MC703', name: 'C형 박스', cat: 'color food', photos: ['mc703-1.webp', 'mc703-2.webp'] },
+      { code: 'MC704', name: 'C형 박스', cat: 'color', photos: ['mc704-1.webp', 'mc704-2.webp'] },
+      { code: 'MC705', name: 'C형 박스', cat: 'color', photos: ['mc705-1.webp', 'mc705-2.webp'] },
+      { code: 'MD601', name: 'D형 박스', cat: 'color', photos: ['md601-1.webp', 'md601-2.webp'] },
+      { code: 'MD602', name: 'D형 박스', cat: 'color', photos: ['md602-1.webp', 'md602-2.webp'] },
+      { code: 'MS1001', name: 'S형 슬리브 박스', cat: 'color', photos: ['ms1001-1.webp', 'ms1001-2.webp'] },
+      { code: 'MS1003', name: 'S형 슬리브 박스', cat: 'color beauty', photos: ['ms1003-1.webp'] },
+      { code: 'MY401', name: 'Y형 뚜껑 박스', cat: 'color', photos: ['my401-1.webp', 'my401-2.webp'] },
+      { code: 'MY402', name: 'Y형 뚜껑 박스', cat: 'color', photos: ['my402-1.webp', 'my402-2.webp'] },
+      { code: 'MY403', name: 'Y형 뚜껑 박스', cat: 'color', photos: ['my403-1.webp', 'my403-2.webp'] },
+      { code: 'MY404', name: 'Y형 뚜껑 박스', cat: 'color food', photos: ['my404-1.webp', 'my404-2.webp'] },
+      { code: 'MY405', name: 'Y형 뚜껑 박스', cat: 'color', photos: ['my405-1.webp', 'my405-2.webp'] },
+      { code: 'MY406', name: 'Y형 뚜껑 박스', cat: 'color', photos: ['my406-1.webp', 'my406-2.webp'] },
+      { code: 'ZC101', name: '맞춤 구조 박스', cat: 'petc', photos: ['zc101-1.webp'] },
+      { code: 'ZG101', name: '맞춤 구조 박스', cat: 'petc', photos: ['zg101-1.webp'] },
+      { code: 'ZG102', name: '맞춤 구조 박스', cat: 'petc', photos: ['zg102-1.webp', 'zg102-2.webp'] }
     ];
     (function () {
       const caseGrid = document.getElementById('caseGrid');
@@ -1131,7 +1173,7 @@
       const caseDlg = document.getElementById('caseDialog');
       const casePhoto = document.getElementById('casePhoto');
       const caseThumbs = document.getElementById('caseThumbs');
-      let caseFilter = 'all', caseExpanded = false, current = null;
+      let caseFilter = 'all', caseLimit = CASE_FIRST, current = null;
 
       /* 타일은 한 번만 만들고, 필터와 더 보기는 숨김/표시만 바꿉니다 (사진이 깜빡이지 않도록) */
       caseGrid.innerHTML = CASES.map((c, i) => `
@@ -1140,16 +1182,16 @@
             <span class="case-cap"><span class="case-name">${c.name}</span></span>
           </button>`).join('');
       function renderCases() {
-        const limited = caseFilter === 'all' && !caseExpanded;
+        const limited = caseFilter === 'all';
         let shown = 0, rest = 0;
         caseGrid.querySelectorAll('.case-item').forEach(item => {
           const match = caseFilter === 'all' || item.dataset.cat.split(' ').includes(caseFilter);
-          const show = match && !(limited && shown >= CASE_FIRST);
+          const show = match && !(limited && shown >= caseLimit);
           if (show) shown++; else if (match) rest++;
           item.hidden = !show;
         });
         caseMore.hidden = rest <= 0;
-        caseMore.textContent = `사례 ${rest}개 더 보기`;
+        caseMore.textContent = `사례 더 보기 (${rest}개 남음)`;
       }
       function showPhoto(n) {
         casePhoto.src = CASE_DIR + current.photos[n];
@@ -1162,7 +1204,7 @@
         document.querySelectorAll('#caseFilters .chip').forEach(c => c.setAttribute('aria-pressed', String(c === chip)));
         renderCases();
       });
-      caseMore.addEventListener('click', () => { caseExpanded = true; renderCases(); });
+      caseMore.addEventListener('click', () => { caseLimit += CASE_STEP; renderCases(); });
       caseGrid.addEventListener('click', e => {
         const item = e.target.closest('.case-item');
         if (!item) return;
