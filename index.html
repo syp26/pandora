@@ -229,6 +229,24 @@
     .box-item p { color: var(--muted); font-size: 0.9rem; flex: 1; }
     .box-item .more { font-size: 0.85rem; font-weight: 600; color: var(--kraft); }
 
+    /* Cases (제작 사례) */
+    .cases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+    .case-item { display: flex; flex-direction: column; text-align: left; background: var(--ink); border: 0; padding: 0; cursor: pointer; box-shadow: 0 0 0 1px var(--line); transition: background-color .25s; }
+    .case-item:hover { background: var(--ink-2); }
+    .case-item:focus-visible { outline-offset: -3px; }
+    .case-item img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; background: #E8E6E0; }
+    .case-cap { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 14px 16px 16px; }
+    .case-name { font-weight: 600; font-size: 0.95rem; letter-spacing: -0.01em; }
+    .cases-more { margin-top: 24px; }
+    .sheet.sheet-case { width: min(760px, calc(100vw - 32px)); }
+    .case-photo { border-radius: var(--radius-sm); overflow: hidden; background: #E8E6E0; margin-bottom: 12px; }
+    .case-photo img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; }
+    .case-thumbs { display: flex; gap: 8px; margin-bottom: 22px; }
+    .case-thumbs button { width: 84px; padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: #E8E6E0; cursor: pointer; opacity: .6; }
+    .case-thumbs button[aria-pressed="true"] { border-color: var(--red); opacity: 1; }
+    .case-thumbs img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; }
+    .sheet-case h2 { margin-right: 0; }
+
     /* Process */
     .process { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: step; }
     .process li { counter-increment: step; padding: 26px 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ink-2); }
@@ -276,7 +294,7 @@
     .quickbar { display: none; }
 
     /* ---------- Dialogs ---------- */
-    dialog { border: 0; padding: 0; background: transparent; color: var(--text); max-width: none; max-height: none; }
+    dialog { border: 0; padding: 0; margin: auto; background: transparent; color: var(--text); max-width: none; max-height: none; }
     dialog::backdrop { background: rgba(5, 7, 11, 0.78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
     .sheet {
       width: min(680px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: auto;
@@ -289,6 +307,8 @@
     .sheet-close:hover { border-color: var(--text); }
     .sheet .box-art { aspect-ratio: 16 / 9; margin-bottom: 24px; }
     .sheet .box-art svg { width: 28%; }
+    .sheet .box-art:has(img) { aspect-ratio: 3 / 2; background: #E8E6E0; }
+    .box-art:has(img) { background: #E8E6E0; }
     .sheet h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; margin: 0 52px 12px 0; line-height: 1.3; }
     .sheet p { color: var(--muted); }
     .spec { margin-top: 22px; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
@@ -303,6 +323,7 @@
     /* ---------- Responsive ---------- */
     @media (max-width: 1024px) {
       .lineup { grid-template-columns: repeat(2, 1fr); }
+      .cases { grid-template-columns: repeat(3, 1fr); }
       .process { grid-template-columns: repeat(2, 1fr); }
       .timeline { grid-template-columns: repeat(2, 1fr); row-gap: 40px; }
       .timeline::before { display: none; }
@@ -343,6 +364,10 @@
     @media (max-width: 560px) {
       .process, .timeline { grid-template-columns: 1fr; }
       .lineup { grid-template-columns: 1fr 1fr; }
+      .cases { grid-template-columns: 1fr 1fr; }
+      .case-cap { padding: 10px 12px 12px; }
+      .case-name { font-size: 0.86rem; }
+      .case-thumbs button { width: 68px; }
       .box-item { min-height: 0; padding: 16px 14px; gap: 10px; }
       .box-item h3 { font-size: 0.95rem; }
       .box-item p { font-size: 0.8rem; line-height: 1.5; }
@@ -370,6 +395,7 @@
         <a href="#about">브랜드</a>
         <a href="#history">연혁</a>
         <a href="#lineup">패키지 라인업</a>
+        <a href="#cases">제작 사례</a>
         <a href="#process">제작 과정</a>
         <a href="#estimate">자동 견적</a>
         <a href="#contact">문의</a>
@@ -464,6 +490,26 @@
       </div>
     </section>
 
+    <!-- Cases: 제작 사례 (사진은 assets/images/cases/ 폴더, 목록은 아래 스크립트의 CASES) -->
+    <section class="section" id="cases">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>제작 사례</h2>
+          <p>신용판도라가 직접 만든 박스입니다. 비슷한 박스를 찾으셨다면 사진을 눌러 바로 문의하세요.</p>
+        </div>
+        <div class="filters" role="group" aria-label="제작 사례 업종 필터" id="caseFilters">
+          <button type="button" class="chip" data-case-filter="all" aria-pressed="true">전체</button>
+          <button type="button" class="chip" data-case-filter="food" aria-pressed="false">식품</button>
+          <button type="button" class="chip" data-case-filter="beauty" aria-pressed="false">화장품·향수</button>
+          <button type="button" class="chip" data-case-filter="fashion" aria-pressed="false">패션·잡화</button>
+          <button type="button" class="chip" data-case-filter="craft" aria-pressed="false">공방·도자기·긴 박스</button>
+          <button type="button" class="chip" data-case-filter="corr" aria-pressed="false">골판지</button>
+        </div>
+        <div class="cases" id="caseGrid"></div>
+        <button type="button" class="btn btn-ghost cases-more" id="caseMore" hidden></button>
+      </div>
+    </section>
+
     <!-- Process -->
     <section class="section" id="process">
       <div class="wrap">
@@ -536,6 +582,7 @@
             </div>
             <div class="field"><label for="f-qty">예상 수량 <span class="opt">(선택)</span></label><input id="f-qty" name="qty" inputmode="numeric" placeholder="예: 1,000개"></div>
             <input type="hidden" name="유입경로" id="f-source">
+            <input type="hidden" name="참고사례" id="f-case">
             <!-- 스팸봇 차단용 숨김 칸(사람은 보지 못함) -->
             <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute; left:-9999px;">
             <div class="field full"><label for="f-msg">문의 내용</label><textarea id="f-msg" name="message" placeholder="제품 크기, 원하는 느낌, 납기 등을 알려주세요." required></textarea></div>
@@ -590,6 +637,21 @@
     </div>
   </dialog>
 
+  <!-- Case dialog (제작 사례 크게 보기) -->
+  <dialog id="caseDialog" aria-labelledby="caseTitle">
+    <div class="sheet sheet-case">
+      <button type="button" class="sheet-close" data-close aria-label="닫기">&times;</button>
+      <div class="case-photo"><img id="casePhoto" alt="" width="960" height="640"></div>
+      <div class="case-thumbs" id="caseThumbs"></div>
+      <h2 id="caseTitle"></h2>
+      <p id="caseDesc"></p>
+      <div class="sheet-actions">
+        <a href="#contact" class="btn btn-primary" data-close id="caseAsk">이 박스로 상담 문의</a>
+        <button type="button" class="btn btn-ghost" data-open-quote>자동 견적 받기</button>
+      </div>
+    </div>
+  </dialog>
+
   <!-- Quote dialog (iframe은 처음 열 때만 불러옵니다) -->
   <dialog id="quoteDialog" aria-label="자동 견적 계산기">
     <div class="sheet sheet-quote">
@@ -626,7 +688,7 @@
 
     const BOXES = [
       {
-        key: 'B', group: 'basic', photo: '',
+        key: 'B', group: 'basic', photo: 'assets/images/lineup/b.webp',
         name: 'B형 단상자',
         short: '위아래 날개를 꽂아 닫는 기본 제품 상자',
         title: 'B형 단상자',
@@ -636,7 +698,7 @@
         use: '화장품, 건강기능식품, 소형 가전'
       },
       {
-        key: 'GC', group: 'ship', photo: '',
+        key: 'GC', group: 'ship', photo: 'assets/images/lineup/gc.webp',
         name: 'G|C형 골판지',
         short: '운송과 보관에 강한 골판지 상자',
         title: 'G|C형 골판지 박스',
@@ -646,7 +708,7 @@
         use: '대량 출고, 겉포장, 보관용'
       },
       {
-        key: 'M', group: 'carry', photo: '',
+        key: 'M', group: 'carry', photo: 'assets/images/lineup/m.webp',
         name: 'M형 끈 손잡이형',
         short: '끈 손잡이를 달아 들고 다니기 좋은 상자',
         title: 'M형 끈 손잡이형 박스',
@@ -656,7 +718,7 @@
         use: '명절·선물 세트, 과일, 식품'
       },
       {
-        key: 'R', group: 'carry', photo: '',
+        key: 'R', group: 'carry', photo: 'assets/images/lineup/r.webp',
         name: 'R형 쇼핑백형',
         short: '손잡이가 달린 쇼핑백 모양 상자',
         title: 'R형 쇼핑백형 박스',
@@ -666,7 +728,7 @@
         use: '매장 포장, 행사 증정품'
       },
       {
-        key: 'D', group: 'ship', photo: '',
+        key: 'D', group: 'ship', photo: 'assets/images/lineup/d.webp',
         name: 'D형 디스플레이',
         short: '손수건·장갑처럼 얇은 제품을 담는 납작한 상자',
         title: 'D형 디스플레이 박스',
@@ -676,17 +738,17 @@
         use: '손수건, 장갑, 양말, 소형 소포'
       },
       {
-        key: 'A', group: 'ship', photo: '',
+        key: 'A', group: 'ship', photo: 'assets/images/lineup/a.webp',
         name: 'A형 택배형',
-        short: '테이프 없이 조립하는 일체형 택배 상자',
+        short: '날개를 접어 테이프로 봉하는 기본 택배 상자',
         title: 'A형 택배형 박스',
-        desc: '앞날개를 끼워 닫는 일체형 택배 상자입니다. 테이프 없이 조립되고 뚜껑을 열 때 브랜드가 바로 보여 온라인 판매에 잘 맞습니다.',
+        desc: '위아래 날개를 접어 테이프로 붙여 닫는 가장 기본적인 택배 상자입니다. 구조가 단순해 제작 단가가 좋고, 납작하게 접힌 상태로 보관할 수 있어 출고량이 많은 온라인 판매에 잘 맞습니다.',
         material: '골판지(E골), 합지',
-        finish: '인쇄, 코팅, 박/형압',
+        finish: '인쇄, 코팅, 박',
         use: '쇼핑몰 택배, 구독 박스, 웰컴키트'
       },
       {
-        key: 'H', group: 'carry', photo: '',
+        key: 'H', group: 'carry', photo: 'assets/images/lineup/h.webp',
         name: 'H형 손잡이형',
         short: '상자 자체에 손잡이가 붙은 구조',
         title: 'H형 손잡이형 박스',
@@ -696,7 +758,7 @@
         use: '베이커리, 테이크아웃, 행사용'
       },
       {
-        key: 'Y', group: 'basic', photo: '',
+        key: 'Y', group: 'basic', photo: 'assets/images/lineup/y.webp',
         name: 'Y형 일반 뚜껑',
         short: '뚜껑과 몸통이 분리된 기본 상자',
         title: 'Y형 일반 뚜껑 박스',
@@ -706,7 +768,7 @@
         use: '식품, 화장품, 선물 세트'
       },
       {
-        key: 'S', group: 'etc', photo: '',
+        key: 'S', group: 'etc', photo: 'assets/images/lineup/s.webp',
         name: 'S형 슬리브형',
         short: '상자나 제품 둘레를 감싸는 띠',
         title: 'S형 슬리브 박스',
@@ -716,7 +778,7 @@
         use: '무지 박스 브랜딩, 세트 묶음'
       },
       {
-        key: 'PET', group: 'etc', photo: '',
+        key: 'PET', group: 'etc', photo: 'assets/images/lineup/pet.webp',
         name: 'PET 투명창',
         short: '투명창으로 내용물이 보이는 상자',
         title: 'PET 투명창 박스',
@@ -726,7 +788,7 @@
         use: '식품, 인형, 화장품'
       },
       {
-        key: 'PAD', group: 'etc', photo: '',
+        key: 'PAD', group: 'etc', photo: 'assets/images/lineup/pad.webp',
         name: '종이패드 내부완충',
         short: '상자 안에서 제품을 고정하는 완충재',
         title: '종이패드 (내부완충)',
@@ -842,10 +904,10 @@
         <span class="more">맞춤 구조 문의하기</span>
       </a>`;
 
-    document.querySelectorAll('.chip').forEach(chip => {
+    document.querySelectorAll('#lineup .chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const f = chip.dataset.filter;
-        document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c === chip)));
+        document.querySelectorAll('#lineup .chip').forEach(c => c.setAttribute('aria-pressed', String(c === chip)));
         grid.querySelectorAll('.box-item').forEach(item => {
           item.hidden = item.classList.contains('box-custom') ? f !== 'all' : !(f === 'all' || item.dataset.group === f);
         });
@@ -894,6 +956,131 @@
       if (!frame.src) frame.src = frame.dataset.src;       // 처음 열 때만 로드
       openDialog(quote);
     });
+
+    /* ---------- Cases (제작 사례) ----------
+       사례를 추가하려면 assets/images/cases/ 에 사진을 올리고 아래 목록에 한 줄을 더하면 됩니다.
+       cat: food(식품) beauty(화장품·향수) fashion(패션·잡화) craft(공방·도자기·긴 박스) corr(골판지) */
+    const CASE_DIR = 'assets/images/cases/';
+    const CASE_FIRST = 12;   // 처음에 보여줄 개수
+    const CASES = [
+      { code: 'SY-14', name: '스카프 박스', cat: 'fashion', photos: ['sy-14-1.webp', 'sy-14-2.webp'] },
+      { code: 'SY-07', name: '한과 박스', cat: 'food', photos: ['sy-07-1.webp', 'sy-07-2.webp'] },
+      { code: 'SY-19', name: '도자기 박스', cat: 'craft', photos: ['sy-19-1.webp', 'sy-19-2.webp'] },
+      { code: 'SY-13', name: '스카프 박스', cat: 'fashion', photos: ['sy-13-1.webp', 'sy-13-2.webp'] },
+      { code: 'SY-01', name: '치킨 박스', cat: 'food', photos: ['sy-01-1.webp', 'sy-01-2.webp'] },
+      { code: 'SY-37', name: '골판지 박스', cat: 'corr', photos: ['sy-37-1.webp', 'sy-37-2.webp'] },
+      { code: 'SY-20', name: '양말 박스', cat: 'fashion', photos: ['sy-20-1.webp', 'sy-20-2.webp'] },
+      { code: 'SY-29', name: '잼 박스', cat: 'food', photos: ['sy-29-1.webp', 'sy-29-2.webp'] },
+      { code: 'SY-31', name: '골판지 박스', cat: 'corr', photos: ['sy-31-1.webp', 'sy-31-2.webp'] },
+      { code: 'SY-06', name: '공방 박스', cat: 'craft', photos: ['sy-06-1.webp', 'sy-06-2.webp'] },
+      { code: 'SY-23', name: '화장품 박스', cat: 'beauty', photos: ['sy-23-1.webp', 'sy-23-2.webp'] },
+      { code: 'SY-28', name: '잼 박스', cat: 'food', photos: ['sy-28-1.webp', 'sy-28-2.webp'] },
+      { code: 'SY-24', name: '화장품 박스', cat: 'beauty', photos: ['sy-24-1.webp', 'sy-24-2.webp'] },
+      { code: 'SY-32', name: '골판지 박스', cat: 'corr', photos: ['sy-32-1.webp', 'sy-32-2.webp'] },
+      { code: 'SY-03', name: '치킨 박스', cat: 'food', photos: ['sy-03-1.webp', 'sy-03-2.webp'] },
+      { code: 'SY-15', name: '의류(요가복) 박스', cat: 'fashion', photos: ['sy-15-1.webp', 'sy-15-2.webp'] },
+      { code: 'SY-17', name: '향수 박스', cat: 'beauty', photos: ['sy-17-1.webp'] },
+      { code: 'SY-27', name: '잼 박스', cat: 'food', photos: ['sy-27-1.webp', 'sy-27-2.webp'] },
+      { code: 'SY-35', name: '골판지 박스', cat: 'corr', photos: ['sy-35-1.webp', 'sy-35-2.webp'] },
+      { code: '', name: '네일 박스', cat: 'beauty', photos: ['nail-1.webp', 'nail-2.webp'] },
+      { code: 'SY-26', name: '면세품 박스', cat: 'fashion', photos: ['sy-26-1.webp', 'sy-26-2.webp'] },
+      { code: 'SY-02', name: '치킨 박스', cat: 'food', photos: ['sy-02-1.webp'] },
+      { code: 'SY-18', name: '도자기 박스', cat: 'craft', photos: ['sy-18-1.webp', 'sy-18-2.webp'] },
+      { code: 'SY-25', name: '마스크 박스', cat: 'fashion', photos: ['sy-25-1.webp'] },
+      { code: 'SY-36', name: '골판지 박스', cat: 'corr', photos: ['sy-36-1.webp', 'sy-36-2.webp'] },
+      { code: 'SY-12', name: '긴 박스', cat: 'craft', photos: ['sy-12-1.webp', 'sy-12-2.webp'] },
+      { code: 'SY-05', name: '치킨 박스', cat: 'food', photos: ['sy-05-1.webp'] },
+      { code: 'SY-22', name: '화장품 박스', cat: 'beauty', photos: ['sy-22-1.webp'] },
+      { code: 'SY-34', name: '골판지 박스', cat: 'corr', photos: ['sy-34-1.webp', 'sy-34-2.webp'] },
+      { code: 'SY-21', name: '양말 박스', cat: 'fashion', photos: ['sy-21-1.webp', 'sy-21-2.webp'] },
+      { code: 'SY-10', name: '긴 박스', cat: 'craft', photos: ['sy-10-1.webp', 'sy-10-2.webp'] },
+      { code: 'SY-04', name: '치킨 박스', cat: 'food', photos: ['sy-04-1.webp'] },
+      { code: 'SY-30', name: '골판지 박스', cat: 'corr', photos: ['sy-30-1.webp', 'sy-30-2.webp'] },
+      { code: 'SY-08', name: '깔창 박스', cat: 'fashion', photos: ['sy-08-1.webp'] },
+      { code: 'SY-09', name: '긴 박스', cat: 'craft', photos: ['sy-09-1.webp', 'sy-09-2.webp'] },
+      { code: '', name: '악세서리 박스', cat: 'fashion', photos: ['acc-1.webp'] },
+      { code: 'SY-38', name: '골판지 박스', cat: 'corr', photos: ['sy-38-1.webp', 'sy-38-2.webp'] },
+      { code: 'SY-11', name: '긴 박스', cat: 'craft', photos: ['sy-11-1.webp', 'sy-11-2.webp'] },
+      { code: 'SY-33', name: '골판지 박스', cat: 'corr', photos: ['sy-33-1.webp', 'sy-33-2.webp'] }
+    ];
+    (function () {
+      const caseGrid = document.getElementById('caseGrid');
+      const caseMore = document.getElementById('caseMore');
+      const caseDlg = document.getElementById('caseDialog');
+      const casePhoto = document.getElementById('casePhoto');
+      const caseThumbs = document.getElementById('caseThumbs');
+      let caseFilter = 'all', caseExpanded = false, current = null;
+
+      /* 타일은 한 번만 만들고, 필터와 더 보기는 숨김/표시만 바꿉니다 (사진이 깜빡이지 않도록) */
+      caseGrid.innerHTML = CASES.map((c, i) => `
+          <button type="button" class="case-item" data-case="${i}" data-cat="${c.cat}">
+            <img src="${CASE_DIR}${c.photos[0]}" alt="${c.name} 제작 사진" width="960" height="640" loading="lazy">
+            <span class="case-cap"><span class="case-name">${c.name}</span></span>
+          </button>`).join('');
+      function renderCases() {
+        const limited = caseFilter === 'all' && !caseExpanded;
+        let shown = 0, rest = 0;
+        caseGrid.querySelectorAll('.case-item').forEach(item => {
+          const match = caseFilter === 'all' || item.dataset.cat === caseFilter;
+          const show = match && !(limited && shown >= CASE_FIRST);
+          if (show) shown++; else if (match) rest++;
+          item.hidden = !show;
+        });
+        caseMore.hidden = rest <= 0;
+        caseMore.textContent = `사례 ${rest}개 더 보기`;
+      }
+      function showPhoto(n) {
+        casePhoto.src = CASE_DIR + current.photos[n];
+        caseThumbs.querySelectorAll('button').forEach((b, k) => b.setAttribute('aria-pressed', String(k === n)));
+      }
+      document.getElementById('caseFilters').addEventListener('click', e => {
+        const chip = e.target.closest('.chip');
+        if (!chip) return;
+        caseFilter = chip.dataset.caseFilter;
+        document.querySelectorAll('#caseFilters .chip').forEach(c => c.setAttribute('aria-pressed', String(c === chip)));
+        renderCases();
+      });
+      caseMore.addEventListener('click', () => { caseExpanded = true; renderCases(); });
+      caseGrid.addEventListener('click', e => {
+        const item = e.target.closest('.case-item');
+        if (!item) return;
+        current = CASES[+item.dataset.case];
+        casePhoto.alt = current.name + ' 제작 사진';
+        caseThumbs.innerHTML = current.photos.length > 1 ? current.photos.map((p, k) =>
+          `<button type="button" data-n="${k}" aria-label="사진 ${k + 1} 보기"><img src="${CASE_DIR}${p}" alt="" width="960" height="640"></button>`).join('') : '';
+        caseThumbs.hidden = current.photos.length < 2;
+        showPhoto(0);
+        document.getElementById('caseTitle').textContent = current.name;
+        document.getElementById('caseDesc').textContent = '비슷한 박스를 원하시면 아래 버튼으로 문의해 주세요. 크기와 인쇄는 제품에 맞춰 새로 제작합니다.';
+        openDialog(caseDlg);
+      });
+      caseThumbs.addEventListener('click', e => {
+        const b = e.target.closest('button');
+        if (b) showPhoto(+b.dataset.n);
+      });
+      caseDlg.addEventListener('close', () => {
+        if (!detail.open && !quote.open) document.body.classList.remove('is-locked');
+      });
+      caseDlg.addEventListener('click', e => {
+        if (e.target === caseDlg || e.target.closest('[data-close]')) closeDialog(caseDlg);
+      });
+      /* 사례 팝업에서 견적을 열면 사례 팝업은 닫습니다 */
+      document.addEventListener('click', e => {
+        if (caseDlg.open && e.target.closest('[data-open-quote]')) closeDialog(caseDlg);
+      }, true);
+      /* '이 박스로 상담 문의': 문의 내용에 어떤 사례인지 미리 적어 둡니다 (직접 쓴 내용은 건드리지 않음) */
+      document.getElementById('caseAsk').addEventListener('click', () => {
+        const msg = document.getElementById('f-msg');
+        if (!current || !msg) return;
+        /* 번호는 고객 화면에 보이지 않고, 문의 메일의 '참고사례' 항목으로만 전달됩니다 */
+        document.getElementById('f-case').value = (current.code ? current.code + ' ' : '') + current.name + ' (' + current.photos[0] + ')';
+        if (!msg.value.trim() || msg.dataset.auto === msg.value) {
+          msg.value = `제작 사례의 ${current.name}와 비슷한 박스 제작을 문의드립니다.\n`;
+          msg.dataset.auto = msg.value;
+        }
+      });
+      renderCases();
+    })();
 
     /* ---------- Contact form ---------- */
     const form = document.getElementById('contactForm');
